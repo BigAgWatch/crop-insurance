@@ -15,9 +15,15 @@
         }
 
         .county {
-            fill: #222;
-            stroke: #fff;
+            stroke: #DDD;
             stroke-width: .1px;
+            stroke-linejoin: round;
+        }
+
+        .states {
+            fill: none;
+            stroke: #FFF;
+            stroke-linejoin: round;
         }
 
         .map-container {
@@ -37,8 +43,12 @@
             position: absolute;
             right: 0;
             bottom: 0;
-            width: 120px;
-            height: 200px;
+            width: 172px;
+            height: 160px;
+        }
+
+        #map-slider {
+            margin-top: 50px;
         }
 
     </style>
@@ -216,15 +226,6 @@
         // map data keys
         map_d = d3.nest().key(function(d){return d.i}).map(map_csv[map_data]);
 
-        // box plot variables
-//        var outliers = [];
-//        var lowerWhisker = Infinity;
-//        var q1Val = d3.quantile(map_d.al, .25);
-//        var medianVal = 0;
-//        var q3Val = -Infinity;
-//        var iqr = 0;
-//        var upperWhisker = -Infinity;
-
         // find minimum value in the array
         var map_data_min = map_csv[map_data].reduce(function (min, x) {
             return Math.min(min, x.al);
@@ -237,27 +238,21 @@
         }, 0);
         console.log("Max Number: " + map_data_max);
 
-        // calculate quintiles
-        var quin = map_data_max / 5;
-        var quintiles = [
-            quin.toString(),
-            (quin * 2).toString(),
-            (quin * 3).toString(),
-            (quin * 4).toString(),
-            (quin * 5).toString()
+        // legend scale
+        var legend_scale = [
+            "< 1",
+            "1 to 1.5",
+            "1.5 to 5",
+            "5 to 10",
+            "> 10"
         ];
 
-        // setup quantize scale
-        var qtz = d3.scale.quantize().domain([map_data_min, map_data_max]);
-
         // color scheme
-        var color_scheme= ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+        var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+        var colorize = d3.scale.threshold()
+                .domain([0, 1, 5, 10])
+                .range(color_scheme);
 
-        // number scale using quintiles
-        var q_scale = qtz.range([quintiles]);
-
-        // color scale using quintiles
-        var colorize = qtz.range(color_scheme);
 
         // clean up the map by resetting the fill value
         d3.select('#map')
@@ -364,10 +359,7 @@
                             // tl = log(total + 1)
                             n: d["n"],
                             i: d["i"],
-                            t: +d["t"],
-                            a: +d["a"],
-                            al: Math.log(+d["a"] + 1),
-                            tl: Math.log(+d["t"] + 1)
+                            t: +d["t"]
                         };
                     });
                 });
