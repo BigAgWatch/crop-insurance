@@ -29,7 +29,7 @@
         var min = 0,
             max = 100,
             step = 0.01,
-            animate = true,
+            animate = false,
             orientation = "horizontal",
             axis = false,
             margin = 50,
@@ -155,6 +155,7 @@
                         axis = d3.svg.axis()
                             .ticks(Math.round(sliderLength / 100))
                             .tickFormat(tickFormat)
+                            .tickSize(12)
                             .orient((orientation === "horizontal") ? "bottom" :  "right");
 
                     }

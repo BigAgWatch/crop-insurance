@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" manifest="crop-insurance.appcache">
+<!--<html lang="en" manifest="crop-insurance.appcache">-->
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Crop Insurance</title>
@@ -53,7 +54,8 @@
     <div class="pure-u-1">
         <div id="map" class="map-container">
             <svg id="map-legend" style="display: none;">
-                <text x="0" y="25" fill="black">Legend</text>
+                <text x="0" y="15" fill="black">Average</text>
+                <text x="0" y="35" fill="black">Loss Ratio</text>
             </svg>
         </div>
         <div id="map-slider" class="map-container"></div>
@@ -109,6 +111,8 @@
             .attr("width", width)
             .attr("height", height);
 
+    var map_d;
+
     //
     // MAP
     //
@@ -139,13 +143,17 @@
             // n = name
             // i = id
             // t = total
-            // l = log total
+            // a = average loss ratio
+            // al = log(average loss ratio + 1)
+            // tl = log(total + 1)
             map_csv.y1989 = data.map(function (d) {
                 return {
                     n: d["n"],
                     i: d["i"],
                     t: +d["t"],
-                    l: Math.log(+d["t"] + 1)
+                    a: +d["a"],
+                    al: Math.log(+d["a"] + 1),
+                    tl: Math.log(+d["t"] + 1)
                 };
             });
 
@@ -206,17 +214,28 @@
     function mapData(map_data) {
 
         // map data keys
-        var map_d = d3.nest().key(function(d){return d.i}).map(map_csv[map_data]);
+        map_d = d3.nest().key(function(d){return d.i}).map(map_csv[map_data]);
+
+        // box plot variables
+//        var outliers = [];
+//        var lowerWhisker = Infinity;
+//        var q1Val = d3.quantile(map_d.al, .25);
+//        var medianVal = 0;
+//        var q3Val = -Infinity;
+//        var iqr = 0;
+//        var upperWhisker = -Infinity;
 
         // find minimum value in the array
         var map_data_min = map_csv[map_data].reduce(function (min, x) {
-            return Math.min(min, x.l);
+            return Math.min(min, x.al);
         }, 0);
+        console.log("Min Number: " + map_data_min);
 
         // find maximum value in the array
         var map_data_max = map_csv[map_data].reduce(function (max, x) {
-            return Math.max(max, x.l);
+            return Math.max(max, x.al);
         }, 0);
+        console.log("Max Number: " + map_data_max);
 
         // calculate quintiles
         var quin = map_data_max / 5;
@@ -228,13 +247,17 @@
             (quin * 5).toString()
         ];
 
-        // color scheme
-        var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+        // setup quantize scale
+        var qtz = d3.scale.quantize().domain([map_data_min, map_data_max]);
 
-        // make the map colorful
-        var colorize = d3.scale.quantize()
-                .domain([map_data_min, map_data_max])
-                .range(color_scheme);
+        // color scheme
+        var color_scheme= ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+
+        // number scale using quintiles
+        var q_scale = qtz.range([quintiles]);
+
+        // color scale using quintiles
+        var colorize = qtz.range(color_scheme);
 
         // clean up the map by resetting the fill value
         d3.select('#map')
@@ -249,7 +272,7 @@
         dmap.filter(function(d){return map_d[d.id]})
                 .style("opacity", .5)
                 .style("fill", function (d) {
-                    return colorize(map_d[d.id][0].l)
+                    return colorize(map_d[d.id][0].a)
                 })
                 .style('stroke', 'black')
                 .on("mouseover", function (d) {
@@ -281,7 +304,7 @@
         map_legend_enter.append('text')
                 .data(quintiles)
                 .text(function (d) {
-                    return "< " + humanNumber(Math.exp(d))
+                    return "< " + parseFloat(Math.exp(d) - 1).toFixed(2)
                 })
                 .attr('fill', 'black')
                 .attr('x', '30')
@@ -333,15 +356,20 @@
                 d3.csv(file_name, function (error, data) {
                     map_csv[y] = data.map(function (d) {
                         return {
+                            // n = name
+                            // i = id
+                            // t = total
+                            // a = average loss ratio
+                            // al = log(average loss ratio + 1)
+                            // tl = log(total + 1)
                             n: d["n"],
                             i: d["i"],
                             t: +d["t"],
-                            l: Math.log(+d["t"] + 1)
+                            a: +d["a"],
+                            al: Math.log(+d["a"] + 1),
+                            tl: Math.log(+d["t"] + 1)
                         };
                     });
-
-                    // status update
-                    console.log("... loaded " + x);
                 });
 
                 // task completion callback

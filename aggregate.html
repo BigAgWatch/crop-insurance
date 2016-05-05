@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<!--<html lang="en" manifest="crop-insurance.appcache">-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crop Insurance</title>
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link href="d3.slider.css" rel='stylesheet' type='text/css'>
+    <style>
+        h1, h2 {
+            font-family: Helvetica, Arial, sans-serif;
+            text-align: center;
+        }
+
+        .county {
+            stroke: #DDD;
+            stroke-width: .1px;
+            stroke-linejoin: round;
+        }
+
+        .states {
+            fill: none;
+            stroke: #FFF;
+            stroke-linejoin: round;
+        }
+
+        .map-container {
+            width: 960px;
+            margin: 0 auto;
+        }
+
+        #the-year {
+            text-align: center;
+        }
+
+        #map {
+            position: relative;
+        }
+
+        #map-legend {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 172px;
+            height: 160px;
+        }
+
+        #map-slider {
+            margin-top: 50px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="pure-g">
+    <div class="pure-u-1">
+        <img src="bigagwatch-logo.jpg" width="316.8" height="100.8">
+        <h1>Crop Insurance Indemnities for Corn</h1>
+        <h2 id="the-year">1989</h2>
+    </div>
+    <div class="pure-u-1">
+        <div id="map" class="map-container">
+            <svg id="map-legend" style="display: none;">
+                <text x="0" y="35" fill="black">Total Indemnities</text>
+            </svg>
+        </div>
+        <div id="map-slider" class="map-container"></div>
+    </div>
+    <div class="pure-u-1">
+    </div>
+</div>
+
+<script src="d3.min.js"></script>
+<script src="topojson.min.js"></script>
+<script src="d3-queue.v2.min.js"></script>
+<script src="d3.slider.js"></script>
+<script>
+    //
+    // GLOBALS
+    //
+    var map_csv = {
+        y1989: "",
+        y1990: "",
+        y1991: "",
+        y1992: "",
+        y1993: "",
+        y1994: "",
+        y1995: "",
+        y1996: "",
+        y1997: "",
+        y1998: "",
+        y1999: "",
+        y2000: "",
+        y2001: "",
+        y2002: "",
+        y2003: "",
+        y2004: "",
+        y2005: "",
+        y2006: "",
+        y2007: "",
+        y2008: "",
+        y2009: "",
+        y2010: "",
+        y2011: "",
+        y2012: "",
+        y2013: "",
+        y2014: "",
+        y2015: ""
+    };
+    var width = 960, height = 500;
+    var path = d3.geo.path();
+
+    // define the map size
+    var map_graphic = d3.select("#map")
+            .append("svg")
+            .attr("id", "map-graphic")
+            .attr("width", width)
+            .attr("height", height);
+
+    //
+    // MAP
+    //
+    function buildMap(callback) {
+        d3.json('us.json', function (error, us) {
+            if (error) throw error;
+
+            map_graphic.selectAll('path')
+                    .data(topojson.feature(us, us.objects.counties).features)
+                    .enter()
+                    .append('path')
+                    .attr('class', 'county')
+                    .attr('cid', function (d) {
+                        return d.id
+                    })
+                    .attr('d', path);
+
+            map_graphic.append("path")
+                    .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a.id !== b.id; }))
+                    .attr("class", "states")
+                    .attr("d", path);
+
+            callback(null)
+        });
+        console.log('... built map');
+    }
+
+    //
+    // LOAD INITIAL CSV DATA
+    //
+    function loadCSV(callback) {
+        d3.csv('data/corn_indem_1989.csv', function (error, data) {
+            // n = name
+            // i = id
+            // t = total
+            map_csv.y1989 = data.map(function (d) {
+                return {
+                    n: d["n"],
+                    i: d["i"],
+                    t: +d["t"],
+                };
+            });
+
+            // send finish signal
+            callback(null)
+        });
+        console.log('... loaded csv');
+    }
+
+    //
+    // TOOL TIP FOR MAP
+    //
+    var tooltip = d3.select("body")
+            .append("div")
+            .append('p')
+            .attr('id', 'tool-tip')
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+    //
+    // HUMAN READABLE NUMBERS
+    //
+    function humanNumber(hn) {
+
+        // round it off
+        var mr = (Math.round(hn)).toString();
+
+        // local variable for scenarios
+        var money = '';
+
+        // scenarios
+        if (mr.length < 3) {
+            // not much
+            money = '$' + mr
+        }
+        else if (mr.length > 2 && mr.length < 7) {
+            // up to hundred thousand
+            money = '$' + mr.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        else if (mr.length > 6 && mr.length < 10) {
+            // up to x million, rounded up
+            var amt = mr.replace(/\B(?=(\d{6})+(?!\d))/g, ".");
+            money = '$' + parseFloat(amt).toFixed(2) + ' million'
+        }
+        else if (mr.length > 9) {
+            // up to x billion, rounded up
+            var amt = mr.replace(/\B(?=(\d{9})+(?!\d))/g, ".");
+            money = '$' + parseFloat(amt).toFixed(2) + ' billion'
+        }
+
+        return money
+    }
+
+    //
+    // MAP DATA
+    //
+    function mapData(map_data) {
+
+        // map data keys
+        var map_d = d3.nest().key(function(d){return d.i}).map(map_csv[map_data]);
+
+        // find minimum value in the array
+        var map_data_min = map_csv[map_data].reduce(function (min, x) {
+            return Math.min(min, x.t);
+        }, 0);
+
+        // find maximum value in the array
+        var map_data_max = map_csv[map_data].reduce(function (max, x) {
+            return Math.max(max, x.t);
+        }, 0);
+
+        // legend scale
+        var legend_scale = [
+                "< $1 million",
+                "$1 million to $10 million",
+                "$10 million to $100 million",
+                "$100 million to $500 million",
+                "> $500 million"
+        ];
+
+
+        // color scheme
+        var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+        var colorize = d3.scale.threshold()
+                .domain([1000000, 10000000, 100000000, 500000000])
+                .range(color_scheme);
+
+        console.log( map_data_max );
+
+
+        // clean up the map by resetting the fill value
+        d3.select('#map')
+                .selectAll('.county')
+                .style('fill', '#222')
+                .style('opacity', 1);
+
+        // loop through the csv defined by the bar variable, select each county, and assign a value
+        var dmap = d3.select('#map-graphic')
+                .selectAll('path');
+
+        dmap.filter(function(d){return map_d[d.id]})
+                .style("opacity", .5)
+                .style("fill", function (d) {
+                    return colorize(map_d[d.id][0].t)
+                })
+                .style('stroke', 'black')
+                .on("mouseover", function (d) {
+                    tooltip.html(map_d[d.id][0].n + " County, " + humanNumber(map_d[d.id][0].t))
+                            .style('padding', '3px 8px')
+                            .style('font-family', 'arial')
+                            .style('background-color', '#222')
+                            .style('color', 'white');
+
+                    return tooltip.style("visibility", "visible");
+                })
+                .on("mousemove", function () {
+                    return tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 10) + "px");
+                })
+                .on("mouseout", function () {
+                    return tooltip.style("visibility", "hidden");
+                });
+
+        // create the map legend
+        var map_legend = d3.select('#map-legend')
+                .style('font-family', 'Verdana')
+                .style('display', 'block')
+                .selectAll('g')
+                .data(color_scheme);
+
+        var map_legend_enter = map_legend.enter().append('g');
+
+        // add text labels to the map legend
+        map_legend_enter.append('text')
+                .data(legend_scale)
+                .text(function (d) {return d})
+                .attr('fill', 'black')
+                .attr('x', '30')
+                .attr('font-size', '10')
+                .attr('y', function (d, i) {
+                    return i * 20 + 57
+                });
+
+        // add colored boxes to the map legend
+        map_legend.append('rect')
+                .style('fill', function (d) {
+                    return d
+                })
+                .attr('x', 0)
+                .attr('y', function (d, i) {
+                    return i * 20 + 45
+                })
+                .attr('height', '15')
+                .attr('width', '25')
+                .style('opacity', '.5');
+    }
+
+    //
+    // DO STUFF AFTER CSV FINISHES LOADING
+    //
+    var q = d3_queue.queue(1);
+    q.defer(buildMap);
+    q.defer(loadCSV);
+    q.await(function () {
+        mapData('y1989');
+
+        console.log("... loading other years");
+
+        // load the rest of the data
+        for (var i = 1; i < Object.keys(map_csv).length; i++) {
+
+            // defer each for cycle
+            var qq = d3_queue.queue(2);
+            qq.defer(function (callback) {
+
+                // set variables
+                var x = (i + 1989).toString();
+                var y = 'y' + (i + 1989).toString();
+
+                // cycle through each year
+                var file_name = 'data/corn_indem_' + (x).toString() + '.csv';
+
+                // load the csv file
+                d3.csv(file_name, function (error, data) {
+                    map_csv[y] = data.map(function (d) {
+                        return {
+                            n: d["n"],
+                            i: d["i"],
+                            t: +d["t"],
+                        };
+                    });
+
+                    // status update
+                    console.log("... loaded " + x);
+                });
+
+                // task completion callback
+                callback(null)
+            });
+        }
+
+        qq.awaitAll(function () {
+            d3.select('#map-slider').call(
+                    d3.slider().axis(true).min(1989).max(2015).step(1).on('slide', function (evt, value) {
+
+                        // remove legend groups
+                        if (d3.select('#map-legend').selectAll('g')) {
+                            d3.select('#map-legend').selectAll('g').remove();
+                        }
+
+                        // rebuild the map with the data
+                        mapData('y' + value);
+
+                        // update the year at the top of the page
+                        d3.select('#the-year').html(value)
+                    })
+            );
+        })
+
+    });
+</script>
+</body>
+</html>
