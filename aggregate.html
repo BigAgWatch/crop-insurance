@@ -236,16 +236,16 @@
         var legend_scale = [
                 "< $1 million",
                 "$1 million to $10 million",
-                "$10 million to $100 million",
-                "$100 million to $500 million",
-                "> $500 million"
+                "$10 million to $50 million",
+                "$50 million to $100 million",
+                "> $100 million"
         ];
 
 
         // color scheme
         var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
         var colorize = d3.scale.threshold()
-                .domain([1000000, 10000000, 100000000, 500000000])
+                .domain([1000000, 10000000, 50000000, 100000000])
                 .range(color_scheme);
 
         // clean up the map by resetting the fill value

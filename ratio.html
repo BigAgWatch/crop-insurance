@@ -140,6 +140,11 @@
                     })
                     .attr('d', path);
 
+            map_graphic.append("path")
+                    .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a.id !== b.id; }))
+                    .attr("class", "states")
+                    .attr("d", path);
+
             callback(null)
         });
         console.log('... built map');
@@ -154,16 +159,12 @@
             // i = id
             // t = total
             // a = average loss ratio
-            // al = log(average loss ratio + 1)
-            // tl = log(total + 1)
             map_csv.y1989 = data.map(function (d) {
                 return {
                     n: d["n"],
                     i: d["i"],
                     t: +d["t"],
-                    a: +d["a"],
-                    al: Math.log(+d["a"] + 1),
-                    tl: Math.log(+d["t"] + 1)
+                    a: +d["a"]
                 };
             });
 
@@ -226,31 +227,19 @@
         // map data keys
         map_d = d3.nest().key(function(d){return d.i}).map(map_csv[map_data]);
 
-        // find minimum value in the array
-        var map_data_min = map_csv[map_data].reduce(function (min, x) {
-            return Math.min(min, x.al);
-        }, 0);
-        console.log("Min Number: " + map_data_min);
-
-        // find maximum value in the array
-        var map_data_max = map_csv[map_data].reduce(function (max, x) {
-            return Math.max(max, x.al);
-        }, 0);
-        console.log("Max Number: " + map_data_max);
-
         // legend scale
         var legend_scale = [
-            "< 1",
-            "1 to 1.5",
-            "1.5 to 5",
+            "1 to 2",
+            "2 to 5",
             "5 to 10",
-            "> 10"
+            "10 to 15",
+            "> 15"
         ];
 
         // color scheme
         var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
         var colorize = d3.scale.threshold()
-                .domain([0, 1, 5, 10])
+                .domain([2, 5, 10, 15])
                 .range(color_scheme);
 
 
@@ -297,10 +286,8 @@
 
         // add text labels to the map legend
         map_legend_enter.append('text')
-                .data(quintiles)
-                .text(function (d) {
-                    return "< " + parseFloat(Math.exp(d) - 1).toFixed(2)
-                })
+                .data(legend_scale)
+                .text(function (d) { return d })
                 .attr('fill', 'black')
                 .attr('x', '30')
                 .attr('font-size', '10')
@@ -310,13 +297,9 @@
 
         // add colored boxes to the map legend
         map_legend.append('rect')
-                .style('fill', function (d) {
-                    return d
-                })
+                .style('fill', function (d) { return d })
                 .attr('x', 0)
-                .attr('y', function (d, i) {
-                    return i * 20 + 45
-                })
+                .attr('y', function (d, i) { return i * 20 + 45 })
                 .attr('height', '15')
                 .attr('width', '25')
                 .style('opacity', '.5');
@@ -355,11 +338,10 @@
                             // i = id
                             // t = total
                             // a = average loss ratio
-                            // al = log(average loss ratio + 1)
-                            // tl = log(total + 1)
                             n: d["n"],
                             i: d["i"],
-                            t: +d["t"]
+                            t: +d["t"],
+                            a: +d["a"]
                         };
                     });
                 });
