@@ -15,7 +15,7 @@
         }
 
         .county {
-            stroke: #DDD;
+            stroke: #EEE;
             stroke-width: .1px;
             stroke-linejoin: round;
         }
@@ -248,11 +248,15 @@
                 .domain([1000000, 10000000, 50000000, 100000000])
                 .range(color_scheme);
 
-        // clean up the map by resetting the fill value
+        // reset the map
         d3.select('#map')
                 .selectAll('.county')
                 .style('fill', '#222')
-                .style('opacity', 1);
+                .style('opacity', 1)
+                .style('stroke', '#EEE')
+                .on("mouseover", function () { return null })
+                .on("mousemove", function () { return null })
+                .on("mouseout", function () { return null });
 
         // loop through the csv defined by the bar variable, select each county, and assign a value
         var dmap = d3.select('#map-graphic')
