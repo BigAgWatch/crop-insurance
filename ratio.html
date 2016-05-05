@@ -241,7 +241,8 @@
 
         // legend scale
         var legend_scale = [
-            "1 to 2",
+            "0 to 1 (loss for farmer)",
+            "1 to 2 (loss for government)",
             "2 to 5",
             "5 to 10",
             "10 to 15",
@@ -249,9 +250,9 @@
         ];
 
         // color scheme
-        var color_scheme = ["#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
+        var color_scheme = ["#9ebcda", "#85d678", "#009933", "#ffbc57", "#f55a5a", "#ba2738"];
         var colorize = d3.scale.threshold()
-                .domain([2, 5, 10, 15])
+                .domain([1, 2, 5, 10, 15])
                 .range(color_scheme);
 
 
@@ -276,9 +277,10 @@
                 })
                 .style('stroke', 'black')
                 .on("mouseover", function (d) {
-                    tooltip.html(map_d[d.id][0].n + " County, " + humanNumber(map_d[d.id][0].t))
+                    tooltip.html(map_d[d.id][0].n + " County <br>Total Indemnities: " + (humanNumber(map_d[d.id][0].t) + "<br>Average Loss Ratio: " + map_d[d.id][0].a ))
                             .style('padding', '3px 8px')
                             .style('font-family', 'arial')
+                            .style('font-size', '.8em')
                             .style('background-color', '#222')
                             .style('color', 'white');
 
