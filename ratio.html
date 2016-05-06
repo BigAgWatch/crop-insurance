@@ -44,11 +44,12 @@
             right: 0;
             bottom: 0;
             width: 172px;
-            height: 160px;
+            height: 170px;
         }
 
         #map-slider {
             margin-top: 50px;
+            margin-bottom: 50px;
         }
 
     </style>
@@ -64,13 +65,20 @@
     <div class="pure-u-1">
         <div id="map" class="map-container">
             <svg id="map-legend" style="display: none;">
-                <text x="0" y="15" fill="black">Average</text>
-                <text x="0" y="35" fill="black">Loss Ratio</text>
+                <text x="0" y="12" fill="black">Average Loss Ratio</text>
+                <text x="0" y="30" fill="black" style="font-size: .6em;">< 1 (premiums more than payouts)</text>
+                <text x="0" y="45" fill="black" style="font-size: .6em;">> 1 (payouts more than premiums)</text>
             </svg>
         </div>
         <div id="map-slider" class="map-container"></div>
     </div>
-    <div class="pure-u-1">
+    <div class="map-container">
+        <p>The above map shows the loss ratio for corn crop insurance from 1989 to 2015.</p>
+        <p>The “Loss ratio” compares the amount of insurance premiums paid into policies to the amount of insurance indemnities – or payouts – later paid back out.</p>
+        <p>A loss ratio below 1.0 means that insurance premiums totaled more than insurance indemnities. A loss ratio greater than 1.0 means that claims paid out totaled more than premiums.</p>
+        <p>For example, during the 2012 drought, loss ratios in Illinois reached as high as 16.6. Use the slide bar located under the map to change from year to year.</p>
+        <p>Use your mouse to scroll over a specific county and see exact loss ratios. Lower loss ratios are shown in light green, while higher loss ratios are shown in red.</p>
+        <p>Data: <a href="http://www.rma.usda.gov/data/sob/scc/index.html" target="_blank">U.S. Department of Agriculture, Risk Management Agency, Summary of Business Reports</a> as of February 24, 2016.</p>
     </div>
 </div>
 
@@ -241,8 +249,8 @@
 
         // legend scale
         var legend_scale = [
-            "0 to 1 (loss for farmer)",
-            "1 to 2 (loss for government)",
+            "0 to 1",
+            "1 to 2",
             "2 to 5",
             "5 to 10",
             "10 to 15",
@@ -310,14 +318,14 @@
                 .attr('x', '30')
                 .attr('font-size', '10')
                 .attr('y', function (d, i) {
-                    return i * 20 + 57
+                    return i * 20 + 67
                 });
 
         // add colored boxes to the map legend
         map_legend.append('rect')
                 .style('fill', function (d) { return d })
                 .attr('x', 0)
-                .attr('y', function (d, i) { return i * 20 + 45 })
+                .attr('y', function (d, i) { return i * 20 + 55 })
                 .attr('height', '15')
                 .attr('width', '25')
                 .style('opacity', '.5');
